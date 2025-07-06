@@ -9,7 +9,6 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     });
 });
 
-
 // Script untuk mobile menu toggle
 document.addEventListener('DOMContentLoaded', function() {
     const menuToggle = document.querySelector('.mobile-menu-toggle');
@@ -80,7 +79,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-
 // Script untuk animasi box gallery
 document.querySelectorAll('.gallery-box').forEach(box => {
     box.addEventListener('click', function() {
@@ -97,8 +95,10 @@ window.addEventListener('scroll', function() {
 // Script untuk menampilkan tahun saat ini di footer
 document.addEventListener('DOMContentLoaded', function() {
     const yearElement = document.querySelector('.copyright p');
-    const currentYear = new Date().getFullYear();
-    yearElement.innerHTML = yearElement.innerHTML.replace('2025', currentYear);
+    if (yearElement) {
+        const currentYear = new Date().getFullYear();
+        yearElement.innerHTML = yearElement.innerHTML.replace('2025', currentYear);
+    }
 });
 
 // Script untuk menganimasi struktur organisasi saat di-scroll
@@ -122,224 +122,309 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// PWA Installation Script
-// Tambahkan kode ini di bagian akhir file script.js yang sudah ada
-
-// Register Service Worker
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
-      .then(registration => {
-        console.log('SW registered: ', registration);
-      })
-      .catch(registrationError => {
-        console.log('SW registration failed: ', registrationError);
-      });
-  });
-}
-
-// PWA Install Prompt
+// PWA INSTALLATION SCRIPT - FIXED VERSION
 let deferredPrompt;
 let installButton;
 
+// Check if app is running in standalone mode
+function isAppInstalled() {
+    return window.matchMedia('(display-mode: standalone)').matches ||
+           window.navigator.standalone === true ||
+           document.referrer.includes('android-app://');
+}
+
 // Create install button
 function createInstallButton() {
-  installButton = document.createElement('button');
-  installButton.id = 'install-button';
-  installButton.innerHTML = '<i class="fas fa-download"></i> Install App';
-  installButton.style.cssText = `
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    background: #076652;
-    color: white;
-    border: none;
-    padding: 12px 20px;
-    border-radius: 25px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-    z-index: 1000;
-    display: none;
-    align-items: center;
-    gap: 8px;
-    transition: all 0.3s ease;
-  `;
-  
-  installButton.addEventListener('mouseover', () => {
-    installButton.style.background = '#054d3e';
-    installButton.style.transform = 'translateY(-2px)';
-  });
-  
-  installButton.addEventListener('mouseout', () => {
-    installButton.style.background = '#076652';
-    installButton.style.transform = 'translateY(0)';
-  });
-  
-  document.body.appendChild(installButton);
+    if (installButton) return; // Prevent duplicate buttons
+    
+    installButton = document.createElement('button');
+    installButton.id = 'install-button';
+    installButton.innerHTML = '<i class="fas fa-download"></i> Install App';
+    installButton.className = 'pwa-install-button';
+    
+    // Add styles
+    installButton.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: linear-gradient(45deg, #076652, #054d3e);
+        color: white;
+        border: none;
+        padding: 12px 20px;
+        border-radius: 25px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        z-index: 1000;
+        display: none;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s ease;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    `;
+    
+    // Add hover effects
+    installButton.addEventListener('mouseenter', () => {
+        installButton.style.transform = 'translateY(-3px) scale(1.05)';
+        installButton.style.boxShadow = '0 6px 20px rgba(0,0,0,0.4)';
+    });
+    
+    installButton.addEventListener('mouseleave', () => {
+        installButton.style.transform = 'translateY(0) scale(1)';
+        installButton.style.boxShadow = '0 4px 15px rgba(0,0,0,0.3)';
+    });
+    
+    // Add click event
+    installButton.addEventListener('click', handleInstallClick);
+    
+    document.body.appendChild(installButton);
 }
 
-// Listen for the beforeinstallprompt event
-window.addEventListener('beforeinstallprompt', (e) => {
-  // Prevent Chrome 67 and earlier from automatically showing the prompt
-  e.preventDefault();
-  
-  // Stash the event so it can be triggered later
-  deferredPrompt = e;
-  
-  // Create and show install button
-  if (!installButton) {
-    createInstallButton();
-  }
-  
-  installButton.style.display = 'flex';
-  
-  // Add click event to install button
-  installButton.addEventListener('click', () => {
-    // Hide the install button
+// Handle install button click
+function handleInstallClick() {
+    if (!deferredPrompt) {
+        showNotification('Install tidak tersedia saat ini. Pastikan Anda menggunakan browser yang mendukung PWA.', 'warning');
+        return;
+    }
+    
+    // Hide install button
     installButton.style.display = 'none';
     
-    // Show the install prompt
+    // Show install prompt
     deferredPrompt.prompt();
     
-    // Wait for the user to respond to the prompt
+    // Wait for user response
     deferredPrompt.userChoice.then((choiceResult) => {
-      if (choiceResult.outcome === 'accepted') {
-        console.log('User accepted the install prompt');
-        showInstallNotification('Terima kasih! Aplikasi sedang diinstall...');
-      } else {
-        console.log('User dismissed the install prompt');
-        // Show button again after 30 seconds
-        setTimeout(() => {
-          installButton.style.display = 'flex';
-        }, 30000);
-      }
-      deferredPrompt = null;
+        if (choiceResult.outcome === 'accepted') {
+            console.log('User accepted the install prompt');
+            showNotification('Terima kasih! Aplikasi sedang diinstall...', 'success');
+        } else {
+            console.log('User dismissed the install prompt');
+            showNotification('Install dibatalkan. Anda dapat menginstall nanti.', 'info');
+            // Show button again after 10 seconds
+            setTimeout(() => {
+                if (installButton && !isAppInstalled()) {
+                    installButton.style.display = 'flex';
+                }
+            }, 10000);
+        }
+        deferredPrompt = null;
     });
-  });
-});
+}
 
-// Listen for the app installed event
-window.addEventListener('appinstalled', (evt) => {
-  console.log('App was installed');
-  showInstallNotification('Aplikasi berhasil diinstall! Selamat menggunakan ORSIMA App.');
-  
-  // Hide install button
-  if (installButton) {
-    installButton.style.display = 'none';
-  }
-});
-
-// Function to show install notification
-function showInstallNotification(message) {
-  const notification = document.createElement('div');
-  notification.style.cssText = `
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background: #076652;
-    color: white;
-    padding: 15px 20px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    z-index: 1001;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-    animation: slideIn 0.3s ease;
-  `;
-  
-  notification.innerHTML = `
-    <i class="fas fa-check-circle" style="margin-right: 8px;"></i>
-    ${message}
-  `;
-  
-  // Add CSS animation
-  const style = document.createElement('style');
-  style.textContent = `
-    @keyframes slideIn {
-      from {
-        transform: translateX(100%);
-        opacity: 0;
-      }
-      to {
-        transform: translateX(0);
-        opacity: 1;
-      }
+// Show notification
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `pwa-notification ${type}`;
+    
+    const colors = {
+        success: '#4CAF50',
+        warning: '#FF9800',
+        error: '#F44336',
+        info: '#2196F3'
+    };
+    
+    const icons = {
+        success: 'fas fa-check-circle',
+        warning: 'fas fa-exclamation-triangle',
+        error: 'fas fa-times-circle',
+        info: 'fas fa-info-circle'
+    };
+    
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: ${colors[type]};
+        color: white;
+        padding: 15px 20px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        z-index: 1001;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        max-width: 300px;
+        animation: slideInRight 0.3s ease;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    `;
+    
+    notification.innerHTML = `
+        <i class="${icons[type]}" style="margin-right: 8px;"></i>
+        ${message}
+    `;
+    
+    // Add CSS animation if not exists
+    if (!document.getElementById('pwa-animations')) {
+        const style = document.createElement('style');
+        style.id = 'pwa-animations';
+        style.textContent = `
+            @keyframes slideInRight {
+                from {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+            
+            @keyframes slideOutRight {
+                from {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+                to {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
     }
     
-    @keyframes slideOut {
-      from {
-        transform: translateX(0);
-        opacity: 1;
-      }
-      to {
-        transform: translateX(100%);
-        opacity: 0;
-      }
-    }
-  `;
-  document.head.appendChild(style);
-  
-  document.body.appendChild(notification);
-  
-  // Remove notification after 5 seconds
-  setTimeout(() => {
-    notification.style.animation = 'slideOut 0.3s ease';
+    document.body.appendChild(notification);
+    
+    // Remove notification after 5 seconds
     setTimeout(() => {
-      notification.remove();
-    }, 300);
-  }, 5000);
+        notification.style.animation = 'slideOutRight 0.3s ease';
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 300);
+    }, 5000);
 }
 
-// Check if app is already installed
-function isAppInstalled() {
-  return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
-         (window.navigator.standalone) ||
-         document.referrer.includes('android-app://');
+// Register Service Worker
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+            .then(registration => {
+                console.log('SW registered: ', registration);
+                
+                // Check for updates
+                registration.addEventListener('updatefound', () => {
+                    const newWorker = registration.installing;
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            showNotification('Update tersedia! Refresh halaman untuk mendapatkan versi terbaru.', 'info');
+                        }
+                    });
+                });
+            })
+            .catch(registrationError => {
+                console.log('SW registration failed: ', registrationError);
+            });
+    });
 }
 
-// Hide install button if app is already installed
-document.addEventListener('DOMContentLoaded', function() {
-  if (isAppInstalled()) {
-    console.log('App is already installed');
-    if (installButton) {
-      installButton.style.display = 'none';
+// Listen for beforeinstallprompt event
+window.addEventListener('beforeinstallprompt', (e) => {
+    console.log('beforeinstallprompt event fired');
+    
+    // Prevent Chrome 67 and earlier from automatically showing the prompt
+    e.preventDefault();
+    
+    // Store the event for later use
+    deferredPrompt = e;
+    
+    // Show install button if app is not already installed
+    if (!isAppInstalled()) {
+        createInstallButton();
+        setTimeout(() => {
+            if (installButton) {
+                installButton.style.display = 'flex';
+            }
+        }, 2000); // Show after 2 seconds
     }
-  }
+});
+
+// Listen for app installed event
+window.addEventListener('appinstalled', (evt) => {
+    console.log('App was installed');
+    showNotification('Aplikasi berhasil diinstall! Selamat menggunakan ORSIMA App.', 'success');
+    
+    // Hide install button
+    if (installButton) {
+        installButton.style.display = 'none';
+    }
+    
+    // Clear the deferredPrompt
+    deferredPrompt = null;
 });
 
 // Add PWA status indicator
 document.addEventListener('DOMContentLoaded', function() {
-  // Add PWA badge to header
-  const header = document.querySelector('header');
-  if (header && !isAppInstalled()) {
-    const pwaBadge = document.createElement('div');
-    pwaBadge.style.cssText = `
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      background: linear-gradient(45deg, #076652, #054d3e);
-      color: white;
-      padding: 5px 10px;
-      border-radius: 15px;
-      font-size: 12px;
-      font-weight: 600;
-      z-index: 1000;
-      animation: pulse 2s infinite;
-    `;
-    pwaBadge.innerHTML = '<i class="fas fa-mobile-alt"></i> Installable App';
+    // Don't show PWA badge if app is already installed
+    if (isAppInstalled()) {
+        console.log('App is running in standalone mode');
+        return;
+    }
     
-    const pulseStyle = document.createElement('style');
-    pulseStyle.textContent = `
-      @keyframes pulse {
-        0% { box-shadow: 0 0 0 0 rgba(7, 102, 82, 0.7); }
-        70% { box-shadow: 0 0 0 10px rgba(7, 102, 82, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(7, 102, 82, 0); }
-      }
-    `;
-    document.head.appendChild(pulseStyle);
-    
-    header.appendChild(pwaBadge);
-  }
+    // Add PWA badge to header
+    const header = document.querySelector('header');
+    if (header) {
+        const pwaBadge = document.createElement('div');
+        pwaBadge.className = 'pwa-badge';
+        pwaBadge.style.cssText = `
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: linear-gradient(45deg, #076652, #054d3e);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 600;
+            z-index: 1000;
+            animation: pulse 2s infinite;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        `;
+        pwaBadge.innerHTML = '<i class="fas fa-mobile-alt"></i> Installable App';
+        
+        // Add pulse animation
+        if (!document.getElementById('pwa-pulse')) {
+            const pulseStyle = document.createElement('style');
+            pulseStyle.id = 'pwa-pulse';
+            pulseStyle.textContent = `
+                @keyframes pulse {
+                    0% { box-shadow: 0 0 0 0 rgba(7, 102, 82, 0.7); }
+                    70% { box-shadow: 0 0 0 10px rgba(7, 102, 82, 0); }
+                    100% { box-shadow: 0 0 0 0 rgba(7, 102, 82, 0); }
+                }
+            `;
+            document.head.appendChild(pulseStyle);
+        }
+        
+        // Add click event to badge
+        pwaBadge.addEventListener('click', () => {
+            if (deferredPrompt) {
+                handleInstallClick();
+            } else {
+                showNotification('Install akan tersedia setelah halaman dimuat penuh.', 'info');
+            }
+        });
+        
+        header.appendChild(pwaBadge);
+    }
+});
+
+// Handle online/offline status
+window.addEventListener('online', () => {
+    showNotification('Koneksi internet tersambung kembali!', 'success');
+});
+
+window.addEventListener('offline', () => {
+    showNotification('Anda sedang offline. Beberapa fitur mungkin tidak tersedia.', 'warning');
+});
+
+// Add keyboard shortcut for install (Ctrl+I)
+document.addEventListener('keydown', (e) => {
+    if (e.ctrlKey && e.key === 'i' && !isAppInstalled() && deferredPrompt) {
+        e.preventDefault();
+        handleInstallClick();
+    }
 });
